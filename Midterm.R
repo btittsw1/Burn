@@ -16,6 +16,10 @@ ui <- dashboardPage(
                      menuItem("Welcome!", tabName = "welcome"),
                      menuItem("Full Time Series", tabName = "full"),
                      menuItem("Choose Your Own Plot", tabName = "choose"),
+                     menuItem("Simple Models", tabName = "simple"),
+                     menuItem("Exponential Smoothing" ,tabName = "ETS"),
+                     menuItem("Auto ARIMA", tabName = "ARIMA"),
+                     menuItem("Manual ARIMA", tabName = "Manual_ARIMA"),
                      menuItem("Analysis", tabName = "analyze")
                    )),
   dashboardBody(
@@ -39,6 +43,14 @@ ui <- dashboardPage(
               h6("View the full time series data. Use the date range selector within to narrow your view."),
               h5(strong("Choose Your Own Plot")),
               h6("Click the buttons to display different types of time series analysis plots."),
+              h5(strong("Simple Models")),
+              h6("Use the buttons to display different types of simple models."),
+              h5(strong("Exponential Smoothing")),
+              h6("Use the buttons to display the different methods of exponential smoothing."),
+              h5(strong("Auto ARIMA")),
+              h6("View a computer-generated ARIMA model"),
+              h5(strong("Manual ARIMA")),
+              h6("Input different parameters for an ARIMA model to see what parameters look best."),
               h5(strong("Analysis")),
               h6("Read an analysis of the four plots you view.")),
       
@@ -66,6 +78,62 @@ ui <- dashboardPage(
                 choices = c("Autocorrelation", "Decomposition", "Seasonality")
               ), status = "primary", title = "Plot Type")
               ),
+      tabItem(tabName = "simple",
+              box(plotOutput("simple_plots"), width = 12,
+                  status = "primary", title = "The Plot You Choose Will Display Here",
+                  solidHeader = TRUE),
+              
+              box(radioButtons(
+                inputId = "simple_choose",
+                label = "Select a plot type to display",
+                choices = c("Naive", "Seasonal Naive", "Mean", "Drift")
+              ), status = "primary", title = "Plot Type")),
+      tabItem(tabName = "ETS",
+              box(plotOutput("ets_plots"), width = 12,
+                  status = "primary", title = "The Method You Choose Will Display Here",
+                  solidHeader = TRUE),
+              
+              box(radioButtons(
+                inputId = "ets_choose",
+                label = "Select a method to use to display the data",
+                choices = c("Holt's", "Holt's / Winter's")
+              ), status = "primary", title = "Method Type")),
+      tabItem(tabName = "ARIMA",
+              box(plotOutput("auto_arima_plot"), width = 12,
+                  status = "primary", title = "Auto ARIMA",
+                  solidHeader = TRUE)),
+      
+      tabItem(tabName = "Manual_ARIMA",
+              box(plotOutput("manual_arima"), width = 12,
+                  status = "primary", title = "Manual ARIMA",
+                  solidHeader = TRUE),
+              
+              box(numericInput(
+                inputId = "AR",
+                label = "Enter your desired autoregression value between 0 and 2",
+                value = 0,
+                min = 0,
+                max = 2,
+                step = 1
+              ), status = "primary", title = "Autoregression Input"),
+              
+              box(numericInput(
+                inputId = "I",
+                label = "Enter your desired integration value between 0 and 2",
+                value = 0,
+                min = 0,
+                max = 2,
+                step = 1
+              ), status = "primary", title = "Integration Input"),
+              
+              box(numericInput(
+                inputId = "MA",
+                label = "Enter your desired moving average value between 0 and 2",
+                value = 0,
+                min = 0,
+                max = 2,
+                step = 1
+              ), status = "primary", title = "Moving Average Input")),
       
       tabItem(tabName = "analyze",
               h4("The time series plot is very irregular, but it is cyclical in that there are generally spikes 
@@ -105,6 +173,84 @@ server <- function(input, output) {
     else if(input$select_plot == "Seasonality"){
       gg_season(FE)
     }
+  })
+  
+  output$simple_plots <- renderPlot({
+    if(input$simple_choose == "Naive"){
+      fit <- FE %>%
+        model(NAIVE(interest))
+      
+      fit %>%
+        forecast() %>%
+        autoplot(FE) %>%
+        labs(title = "Naive Model")
+    }
+    else if(input$simple_choose == "Seasonal Naive"){
+      fit <- FE %>%
+        model(SNAIVE(interest))
+      
+      fit %>%
+        forecast() %>%
+        autoplot(FE) %>%
+        labs(title = "Seasonal Naive Model")
+    }
+    else if(input$simple_choose == "Mean"){
+      fit <- FE %>%
+        model(MEAN(interest))
+      
+      fit %>%
+        forecast() %>%
+        autoplot(FE) %>%
+        labs(title = "Mean Model")
+    }
+    else if(input$simple_choose == "Drift"){
+      fit <- FE %>%
+        model(RW(interest ~ drift()))
+      
+      fit %>%
+        forecast() %>%
+        autoplot(FE) %>%
+        labs(title = "Drift Model")
+    }
+  })
+  
+  output$ets_plots <- renderPlot({
+    if(input$ets_choose == "Holt's"){
+      fit <- FE %>%
+        model(ETS(interest ~ trend()))
+      
+      fit %>%
+        forecast() %>%
+        autoplot(FE) %>%
+        labs(title = "Holt's Method")
+    }
+    else if(input$ets_choose == "Holt's / Winter's"){
+      fit <- FE %>%
+        model(ETS(interest ~ trend() + season()))
+      
+      fit %>%
+        forecast() %>%
+        autoplot(FE) %>%
+        labs(title = "Holt's / Winter's Method")
+    }
+  })
+  
+  output$auto_arima_plot <- renderPlot({
+      fit <- FE %>%
+        model(ARIMA(interest))
+      
+      fit %>%
+        forecast() %>%
+        autoplot(FE)
+  })
+  
+  output$manual_arima <- renderPlot({
+    fit <- FE %>%
+      model(ARIMA(interest ~ 0 + pdq(input$AR, input$I, input$MA)))
+    
+    fit %>%
+      forecast() %>%
+      autoplot(FE)
   })
 }
 shinyApp(ui, server)
