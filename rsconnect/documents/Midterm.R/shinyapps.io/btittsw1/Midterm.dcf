@@ -1,0 +1,14 @@
+name: Midterm
+title: Midterm
+username:
+account: btittsw1
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 6266722
+bundleId: 5888306
+url: https://btittsw1.shinyapps.io/Midterm/
+when: 1652126201.51169
+lastSyncTime: 1652126201.51169
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: .RData|Midterm.zip|README.md
